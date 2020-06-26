@@ -1,0 +1,12 @@
+int funcion(int x, int y){
+    return 8 * 6.4 + f();
+}
+
+int main(){
+    
+    double z = 0.0;
+
+    double f = z;
+
+}
+
