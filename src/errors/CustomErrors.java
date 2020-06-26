@@ -3,6 +3,10 @@ package errors;
 import java.util.ArrayList;
 
 /*
+
+
+
+
     Esta clase nos permite visualizar todos los errores y advertencias necesarias
     si alguna regla sintactica no se cumple o mas bien hay un error semantico
 */
@@ -112,5 +116,4 @@ public class CustomErrors {
     public void idDifferentsTypesParamArgs(String position, String type1, String type2, String id){
         System.out.println(msgWarning + msgLine + position + "; The type '" + type1 + "' of the argument '" + id + "' does not match the type '" + type2 + "' of the parameter" + msgSemantic);
     }
-    
 }
