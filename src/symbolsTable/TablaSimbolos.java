@@ -3,10 +3,8 @@ package symbolsTable;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * TablaSimbolos

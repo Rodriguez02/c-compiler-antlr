@@ -55,8 +55,12 @@ public class CustomErrors {
         System.out.println(msgError + msgLine + position + "; Incorrect end of instruction. Missing ';'" + msgSyntactic);
     }
 
-    public void missingPA(String position){
-        System.out.println(msgError + msgLine + position + "; Missing '('" + msgSyntactic);
+    public void missingOpenSymbol(String position, String token){
+        System.out.println(msgError + msgLine + position + "; Open symbol missing: '" + token + "'" + msgSyntactic);
+    }
+
+    public void missingCloseSymbol(String position, String token){
+        System.out.println(msgError + msgLine + position + "; Close symbol missing: '" + token + "'" + msgSyntactic);
     }
 
     public void idNotInitialized(String position, String id){
@@ -116,4 +120,5 @@ public class CustomErrors {
     public void idDifferentsTypesParamArgs(String position, String type1, String type2, String id){
         System.out.println(msgWarning + msgLine + position + "; The type '" + type1 + "' of the argument '" + id + "' does not match the type '" + type2 + "' of the parameter" + msgSemantic);
     }
+
 }

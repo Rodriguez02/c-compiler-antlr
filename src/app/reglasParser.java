@@ -1,4 +1,4 @@
-// Generated from /home/jose/TC/Version/version-1/ProyectSimbols/src/app/reglas.g4 by ANTLR 4.7.1
+// Generated from /home/emi/Documentos/TC/c-compiler-antlr/src/app/reglas.g4 by ANTLR 4.8
 
 package app;
 
@@ -13,7 +13,7 @@ import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast"})
 public class reglasParser extends Parser {
-	static { RuntimeMetaData.checkVersion("4.7.1", RuntimeMetaData.VERSION); }
+	static { RuntimeMetaData.checkVersion("4.8", RuntimeMetaData.VERSION); }
 
 	protected static final DFA[] _decisionToDFA;
 	protected static final PredictionContextCache _sharedContextCache =
@@ -34,27 +34,36 @@ public class reglasParser extends Parser {
 		RULE_conj = 24, RULE_comparison = 25, RULE_comp = 26, RULE_opcomp = 27, 
 		RULE_expression = 28, RULE_exp = 29, RULE_term = 30, RULE_ter = 31, RULE_factor = 32, 
 		RULE_f = 33;
-	public static final String[] ruleNames = {
-		"prog", "instructions", "block", "instruction", "retorno", "declaration", 
-		"asign", "datatype", "assignment", "cyclefor", "cyclewhile", "condif", 
-		"prototype", "function", "parameters", "param", "callfunction", "arguments", 
-		"arg", "operation", "opal", "disjunction", "disy", "conjunction", "conj", 
-		"comparison", "comp", "opcomp", "expression", "exp", "term", "ter", "factor", 
-		"f"
-	};
+	private static String[] makeRuleNames() {
+		return new String[] {
+			"prog", "instructions", "block", "instruction", "retorno", "declaration", 
+			"asign", "datatype", "assignment", "cyclefor", "cyclewhile", "condif", 
+			"prototype", "function", "parameters", "param", "callfunction", "arguments", 
+			"arg", "operation", "opal", "disjunction", "disy", "conjunction", "conj", 
+			"comparison", "comp", "opcomp", "expression", "exp", "term", "ter", "factor", 
+			"f"
+		};
+	}
+	public static final String[] ruleNames = makeRuleNames();
 
-	private static final String[] _LITERAL_NAMES = {
-		null, "'('", "')'", "'['", "']'", "'{'", "'}'", "';'", "','", "'='", "'>'", 
-		"'>='", "'<'", "'<='", "'=='", "'!='", "'+'", "'-'", "'*'", "'/'", "'%'", 
-		"'||'", "'&&'", "'!'", "'for'", "'while'", "'if'", "'else'", "'int'", 
-		"'char'", "'double'", "'void'", "'return'"
-	};
-	private static final String[] _SYMBOLIC_NAMES = {
-		null, "PA", "PC", "CA", "CC", "LA", "LC", "PYC", "COMA", "EQ", "MAY", 
-		"MAYEQ", "MEN", "MENEQ", "EQL", "DST", "SUM", "RES", "MUL", "DIV", "MOD", 
-		"OR", "AND", "NOT", "FOR", "WHILE", "IF", "ELSE", "INT", "CHAR", "DOUBLE", 
-		"VOID", "RETURN", "ID", "INTEGER", "DECIMAL", "CHARACTER", "WS", "OTRO"
-	};
+	private static String[] makeLiteralNames() {
+		return new String[] {
+			null, "'('", "')'", "'['", "']'", "'{'", "'}'", "';'", "','", "'='", 
+			"'>'", "'>='", "'<'", "'<='", "'=='", "'!='", "'+'", "'-'", "'*'", "'/'", 
+			"'%'", "'||'", "'&&'", "'!'", "'for'", "'while'", "'if'", "'else'", "'int'", 
+			"'char'", "'double'", "'void'", "'return'"
+		};
+	}
+	private static final String[] _LITERAL_NAMES = makeLiteralNames();
+	private static String[] makeSymbolicNames() {
+		return new String[] {
+			null, "PA", "PC", "CA", "CC", "LA", "LC", "PYC", "COMA", "EQ", "MAY", 
+			"MAYEQ", "MEN", "MENEQ", "EQL", "DST", "SUM", "RES", "MUL", "DIV", "MOD", 
+			"OR", "AND", "NOT", "FOR", "WHILE", "IF", "ELSE", "INT", "CHAR", "DOUBLE", 
+			"VOID", "RETURN", "ID", "INTEGER", "DECIMAL", "CHARACTER", "WS", "OTRO"
+		};
+	}
+	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
 	/**
@@ -104,6 +113,7 @@ public class reglasParser extends Parser {
 		super(input);
 		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
 	}
+
 	public static class ProgContext extends ParserRuleContext {
 		public InstructionsContext instructions() {
 			return getRuleContext(InstructionsContext.class,0);

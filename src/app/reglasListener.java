@@ -1,4 +1,4 @@
-// Generated from /home/jose/TC/Version/version-1/ProyectSimbols/src/app/reglas.g4 by ANTLR 4.7.1
+// Generated from /home/emi/Documentos/TC/c-compiler-antlr/src/app/reglas.g4 by ANTLR 4.8
 
 package app;
 

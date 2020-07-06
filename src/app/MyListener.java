@@ -3,9 +3,12 @@ package app;
 import symbolsTable.Funcion;
 import symbolsTable.Id;
 import symbolsTable.TablaSimbolos;
+import symbolsTable.MyToken;
 import symbolsTable.Variable;
 import org.antlr.v4.runtime.tree.Trees;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.ErrorNode;
+import org.antlr.v4.runtime.tree.ErrorNodeImpl;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import app.reglasParser.*;
@@ -302,8 +305,11 @@ public class MyListener extends reglasBaseListener {
     @Override 
     public void exitCallfunction(CallfunctionContext ctx) {
         if(ctx.getParent() instanceof InstructionContext){
-            getID(ctx.ID().getText()).setUtilizado(true);
-            processCallfunction(null, ctx);
+            Id id = getID(ctx.ID().getText());
+            if(id != null){
+                getID(ctx.ID().getText()).setUtilizado(true);
+                processCallfunction(null, ctx);
+            }
         }
     }
 
@@ -313,4 +319,21 @@ public class MyListener extends reglasBaseListener {
             processDeclaration(ctx.declaration());
         //System.out.println(simbolos);
     } 
+
+    // @Override
+    // public void exitDeclaration(DeclarationContext ctx) {
+    //     if(!ctx.getStop().getText().equals(";")){
+    //         MyToken token = new MyToken(reglasLexer.PYC, ";");
+
+    //         ctx.addErrorNode(new ErrorNodeImpl((Token) token));
+
+
+    //     }
+    // }
+
+    // @Override
+    // public void visitErrorNode(ErrorNode node) {
+    //     System.out.println("ERROR -> " + node.getText());
+    //     super.visitErrorNode(node);
+    // }
 }
