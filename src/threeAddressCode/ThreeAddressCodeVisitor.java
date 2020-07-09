@@ -6,7 +6,6 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.Trees;
 
 import app.reglasBaseVisitor;
-import app.reglasLexer;
 import app.reglasParser;
 import app.reglasParser.*;
 import java.util.ArrayList;
@@ -188,7 +187,6 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
             if(((FactorContext)factorsLocal.get(i)).opal() != null){
                 temp = currentTemp;
                 processFactors(((FactorContext)factorsLocal.get(i)).opal());
-                System.out.println("previous "+temp);
                 previousTemp = temp;
                 currentTemp = "t" + (countTmp - 1);
             }else{
@@ -198,8 +196,7 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
             }
             if(i > 0){
                 concatTemps(factorsLocal.get(i).getParent().getChild(0).getText());
-            }    	
-            
+            }    	          
         }
     }
 
@@ -209,7 +206,6 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
 
         List<ParseTree> terms = new ArrayList<ParseTree>(ruleTerms);
         for (int i=0; i < terms.size(); i++){
-                
             // Lista de factores de ese termino 'i' 9 * 8 / 2  -> [9,8,2]
             Collection<ParseTree> factors = findOpalWithoutFactors((TermContext)terms.get(i));
             List<ParseTree> listFactors = new ArrayList<ParseTree>(factors);
@@ -220,20 +216,21 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
                 generateTemps(factors); // Genero los temporales
                                         // t0 = 9 * 8
                                         // t1 = t0 / 2    
-                System.out.println("prev en proccess " + previousTemp);
-                System.out.println("current en proccess " + currentTemp);
 
                 previousTemp = temp; // almaceno en un auxiliar el temporal actual
 
                 currentTemp = "t" + (countTmp - 1); 
-            }else{ 
-                
+            }else{    
                 previousTemp = currentTemp; // almaceno en un auxiliar el temporal actual
-                currentTemp = listFactors.get(0).getText(); // el actual es el primero de la lista 9 -> 9 + 1
-
-
-                if(terms.size() == 1){ // cuando hay un termino y un factor, ej --> y = 9;
-                    result += 	currentTemp + "\n"; 
+                if(((TermContext)terms.get(i)).factor().opal() == null){
+                    currentTemp = listFactors.get(0).getText(); // el actual es el primero de la lista 9 -> 9 + 1
+                    if(terms.size() == 1){ // cuando hay un termino y un factor, ej --> y = 9;
+                        result += currentTemp + "\n";
+                    }
+                } else {
+                    temp = currentTemp; 
+                    processFactors(((TermContext)terms.get(i)).factor().opal());
+                    previousTemp = temp;
                 }
             }
             if(i > 0){ // si no es el primer termino
@@ -241,7 +238,6 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
             }
         }
     }
-
 }
 
 /*
@@ -263,9 +259,8 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
           no esta contemplado el proceso de un unico termino
 
     - el igual no hace falta imprimirlo viene con la regla
-*/
+    - guardar en un archivo
 
-/*
     int main(){     
         int x;                              
         int y = 0;                          --> y = 0
