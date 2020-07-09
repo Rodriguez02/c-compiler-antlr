@@ -134,25 +134,12 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
         System.out.println(result);            
     }
 
-    private Collection<ParseTree> findFactors(TermContext ctx){
-        return Trees.findAllRuleNodes(ctx, reglasParser.RULE_factor);
-    }
 
-    private void generateTemps(Collection<ParseTree> factors){
-        List<ParseTree> factorsLocal = new ArrayList<ParseTree>(factors);
-        for(int i=1; i < factorsLocal.size(); i++){
-            if(i == 1){ // primer factor
-                result += 	"t" + countTmp + " = " + factorsLocal.get(i-1).getText() + " " +
-                    factorsLocal.get(i).getParent().getChild(0).getText() + " " +
-                    factorsLocal.get(i).getText() + "\n";
-                countTmp++;	
-            }else{
-                result += 	"t" + countTmp + " = " + "t" + (countTmp - 1) + " " +
-                factorsLocal.get(i).getParent().getChild(0).getText() + " " +
-                factorsLocal.get(i).getText() + "\n";
-                countTmp++;
-            }	
-        }
+    // Esta funcion concate los temporales anteriores y actuales pasandole la operacion entre medio
+    private void concatTemps(String operation){
+        result += String.format("t%d = %s %s %s \n", countTmp, previousTemp, operation, currentTemp);
+        currentTemp = "t" + countTmp;
+        countTmp++;
     }
 
     private Collection<ParseTree> findOpalWithoutTerms(ParseTree ctx){
@@ -173,63 +160,86 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
         return terms;
     }
 
+    private Collection<ParseTree> findOpalWithoutFactors(ParseTree ctx){
+        Collection<ParseTree> factors = Trees.findAllRuleNodes(ctx, reglasParser.RULE_factor);
+        //System.out.println("Term Size: "+terms.size());
+        Collection<ParseTree> opals = Trees.findAllRuleNodes(ctx, reglasParser.RULE_opal);
+
+        //opals.remove(opals.toArray()[0]);
+   
+        //System.out.println("Opal size: " + opals.size() );
+        Collection<ParseTree> factorsInOpal;
+        for (ParseTree o : opals) {
+            if(((OpalContext)o).getParent() instanceof FactorContext){
+                factorsInOpal = Trees.findAllRuleNodes(o, reglasParser.RULE_factor);
+                factors.removeAll(factorsInOpal);
+            }
+        }
+        return factors;
+    }
+
+    private void generateTemps(Collection<ParseTree> factors){
+        List<ParseTree> factorsLocal = new ArrayList<ParseTree>(factors);
+        String temp;
+
+        for(int i=0; i < factorsLocal.size(); i++){
+
+            // si es opal guardar el ultimo termporal
+            if(((FactorContext)factorsLocal.get(i)).opal() != null){
+                temp = currentTemp;
+                processFactors(((FactorContext)factorsLocal.get(i)).opal());
+                System.out.println("previous "+temp);
+                previousTemp = temp;
+                currentTemp = "t" + (countTmp - 1);
+            }else{
+                // sino guardar el valor
+                previousTemp = currentTemp;
+                currentTemp =  factorsLocal.get(i).getText();
+            }
+            if(i > 0){
+                concatTemps(factorsLocal.get(i).getParent().getChild(0).getText());
+            }    	
+            
+        }
+    }
+
     private void processFactors(OpalContext ctx) {
         Collection<ParseTree> ruleTerms = findOpalWithoutTerms(ctx);
+        String temp;
 
-
-        //System.out.println(ruleTerms.size());
-
-        // Collection<ParseTree> ruleFactor = Trees.findAllRuleNodes(ctx, reglasParser.RULE_factor);
-        // if (ruleTerms.size() < 3){
-        //     TermContext tc;
-            
-        //     for (ParseTree parseTree : ruleTerms) {
-        //         tc = ((TermContext)parseTree);
-        //         if(tc.getParent() instanceof ExpContext){
-        //             result += tc.getParent().getChild(0).getText() + " " + tc.getChild(0).getText() + "\n";
-        //         } else{
-        //             result += tc.getChild(0).getText() + (ruleTerms.size() == 1 ? "\n" : " ");
-        //         }
-        //     }
-        // }else{
-            List<ParseTree> terms = new ArrayList<ParseTree>(ruleTerms);
-           
-            for (int i=0; i < terms.size(); i++){
-
-                if(((TermContext)terms.get(i)).factor().opal() != null){
-
-                    String tempcualq = currentTemp;
-                    processFactors(((TermContext)terms.get(i)).factor().opal());
-                    if(!tempcualq.equals("")){
-                        result += "t" + countTmp + " = " + tempcualq + " " + ((TermContext)terms.get(i)).getParent().getChild(0) + " " + currentTemp + "\n";
-                        countTmp++;
-                        currentTemp = "t" + (countTmp-1); 
-                    }
-                } else{
-                    Collection<ParseTree> factors = findFactors((TermContext)terms.get(i));
-                    List<ParseTree> listFactors = new ArrayList<ParseTree>(factors);
-                    if (factors.size() > 1){
-                        generateTemps(factors);
-                        previousTemp = currentTemp;
-                        currentTemp = "t" + (countTmp - 1);
-                    }else{
-                        previousTemp = currentTemp;
-                        currentTemp = listFactors.get(0).getText();
-                        if(terms.size() == 1){ // cuando hay un termino y un factor, ej --> y = 9;
-                            result += 	currentTemp + "\n";
-                        }
-                    }
-                    if(i > 0){
-                        result += 	"t" + countTmp + " = " + previousTemp + " " +
-                                    terms.get(i).getParent().getChild(0).getText() + " " +
-                                    currentTemp + "\n";
-                        currentTemp = 	"t" + countTmp;
-                        countTmp++;
-                    }
-                }
+        List<ParseTree> terms = new ArrayList<ParseTree>(ruleTerms);
+        for (int i=0; i < terms.size(); i++){
                 
+            // Lista de factores de ese termino 'i' 9 * 8 / 2  -> [9,8,2]
+            Collection<ParseTree> factors = findOpalWithoutFactors((TermContext)terms.get(i));
+            List<ParseTree> listFactors = new ArrayList<ParseTree>(factors);
+
+            // Si tiene mas de un factor -> 9 * 8 / 2 
+            if (factors.size() > 1){
+                temp = currentTemp;
+                generateTemps(factors); // Genero los temporales
+                                        // t0 = 9 * 8
+                                        // t1 = t0 / 2    
+                System.out.println("prev en proccess " + previousTemp);
+                System.out.println("current en proccess " + currentTemp);
+
+                previousTemp = temp; // almaceno en un auxiliar el temporal actual
+
+                currentTemp = "t" + (countTmp - 1); 
+            }else{ 
+                
+                previousTemp = currentTemp; // almaceno en un auxiliar el temporal actual
+                currentTemp = listFactors.get(0).getText(); // el actual es el primero de la lista 9 -> 9 + 1
+
+
+                if(terms.size() == 1){ // cuando hay un termino y un factor, ej --> y = 9;
+                    result += 	currentTemp + "\n"; 
+                }
             }
-        //}
+            if(i > 0){ // si no es el primer termino
+                concatTemps(terms.get(i).getParent().getChild(0).getText());
+            }
+        }
     }
 
 }
@@ -248,6 +258,9 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
     - for
     - funciones
 
+        - cuando el opal es el unico termino x = ( 9 + 1 )
+                                             x = 4 + ( 9 * 2) + 5
+          no esta contemplado el proceso de un unico termino
 
     - el igual no hace falta imprimirlo viene con la regla
 */

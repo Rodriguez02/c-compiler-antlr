@@ -63,3 +63,14 @@
 - fin tercer vuelta
 
 
+
+-------
+TESTS PASS
+
+int main(){    
+
+    int y;
+    y = (0 * 8 + (1 + 1 / 2 * 6)) + (9 + 7);
+}
+
+
