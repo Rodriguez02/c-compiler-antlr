@@ -1,0 +1,65 @@
+      4  *  5    +  9  /  2  *  4   + 5
+     |_______|  |________________| |___|
+         ↓             ↓             ↓     
+       term0         term1         term2
+
+- obtener terminos
+- ciclo por terminos: [term0, term1, term2]
+    - buscar factores del termino: [4,5]
+    - ¿ factores es mayor a 1 ? : si
+        - generar temporales dentro del termino
+        - ciclo por factores
+            - las operaciones dentro del termino tienen
+              simpre la misma forma, nunca va a haber 
+              dos temporales en una asignacion
+            - ej: 9 / 2 * 4 * 5
+                 t0 = 9 / 2 
+                 t1 = t0 * 4
+                 t2 = t1 * 5
+            - por lo tanto solo la primer asignacion NO se
+              compone de temporales
+            - se comienza a evaluar desde la posicion 1, 
+              porque el padre de ese factor tiene acceso directo
+              al operador
+            - si es la primer vuelta: se concantena el valor del factor anterior
+              con el operador y el valor actual
+              - t0 = 4 * 5
+              - incrementar cantidad de temporales
+            - si no es la primer vuelta: se concatena el temporal anterior
+              con el operador y el valor actual 
+              - incrementar cantidad de temporales
+        - auxA = auxB // auxA = ""
+        - auxB = "t0"
+    ¿ es el primer termino ? : si, entonces no se realiza ninguna accion
+    debido a que una vez procesado el siguiente termino se realiza la concatenacion
+- fin del primer vuelta
+
+-segunda vuelta
+    - buscar factores del termino [9, 2, 4]
+    - ¿ facores es mayor a 1 ? : si
+        - generar temporales dentro del termino
+        - ciclo por los factores
+            - ¿ es la primera vuelta ? : si
+                - t1 = 9 / 2
+                - t2 = t0 + 4
+        - auxA = "t0"
+        - auxB = "t2"
+    - ¿ no es el primer termino ? : si
+        - t3 = auxA ("t0") + auxB ("t2")
+        - auxB = "t3" actualizar auxB al ultimo temporal, 
+                      que es el proximo a utilizar
+- fin segunda vuelta
+
+- tercer vuelta
+    - buscar factores del termino [5]
+    - ¿ factores es mayor a 1 ? : no
+        - entonces entra al ELSE
+        - auxA = "t3"
+        - auxB = 5
+    - ¿ no es el primer termino ? : si
+        - t4 = auxA ("t3") + auxB (5)
+        - auxB = "t4" actualizar auxB al ultimo temporal, 
+                      que es el proximo a utilizar
+- fin tercer vuelta
+
+

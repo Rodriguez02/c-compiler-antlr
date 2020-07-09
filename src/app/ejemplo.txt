@@ -1,26 +1,8 @@
-int main(){     
-    int y = x + y;    
+int main(){    
 
-    int z = 0 + 10;   
+    int y;
+    y = (0 * 8 + (1 + 1 / 2 * 6)) + (9 + 7);
 
-    int i = 3;
-
-    if(x>0){
-        int x = x + 1;
-    }else{
-        u = 0;
-    }
-
-    i=2;
-
-    p=4 + i;
-
-
-    while(q == 16){
-        q = 7 + o;
-    }
-
-    for(i=0;i<22;i=i+1){
-        c = 8;
-    }
+    t0 = 4 + 4
+    t1 = t0 + 4
 }
