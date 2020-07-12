@@ -8,6 +8,9 @@ import org.antlr.v4.runtime.tree.Trees;
 import app.reglasBaseVisitor;
 import app.reglasParser;
 import app.reglasParser.*;
+
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,7 +18,7 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
     private int countLbl;
     private int countTmp;
     private String result;
-    private String previousTemp; 
+    private String previousTemp;
     private String currentTemp;
 
     public ThreeAddressCodeVisitor() {
@@ -30,122 +33,134 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
     public String visit(ParseTree tree) {
         return super.visit(tree);
     }
-    
+
     @Override
-    public String visitAssignment(AssignmentContext ctx){
-        if (ctx.asign() != null){
+    public String visitAssignment(AssignmentContext ctx) {
+        if (ctx.asign() != null) {
             List<ParseTree> ruleTerms = findRuleNodes(ctx, reglasParser.RULE_term);
-            if (moreThanTwo(ruleTerms)){
-                processFactors(ctx.asign().operation().opal());
-            }else{
+            if (ruleTerms.size()<3) {
                 result += ctx.ID().getText() + " = ";
+                moreThanTwo(ruleTerms);
+            } else{
+                processFactors(ctx.asign().operation().opal());
+                result += ctx.ID().getText() + " = t" + (countTmp - 1) + "\n";
             }
         }
         return "";
     }
-    
+
     @Override
-    public String visitDeclaration(DeclarationContext ctx){
-        if (ctx.asign() != null){
+    public String visitDeclaration(DeclarationContext ctx) {
+        if (ctx.asign() != null) {
             List<ParseTree> ruleTerms = findRuleNodes(ctx, reglasParser.RULE_term);
-            if (moreThanTwo(ruleTerms)){
-                processFactors(ctx.asign().operation().opal());
-            }else{
+            if (ruleTerms.size()<3) {
                 result += ctx.ID().getText() + " = ";
+                moreThanTwo(ruleTerms);
+            } else{
+                processFactors(ctx.asign().operation().opal());
+                result += ctx.ID().getText() + " = t" + (countTmp - 1) + "\n";
             }
         }
         return "";
     }
-    
+
     @Override
-    public String visitCondif(CondifContext ctx){
+    public String visitCondif(CondifContext ctx) {
         countLbl++;
-        
-        result += String.format("ifnot %s, jmp L%s\n",ctx.operation().getText(),countLbl);
-        
-        if(ctx.ELSE() == null){
+
+        result += String.format("ifnot %s, jmp L%s\n", ctx.operation().getText(), countLbl);
+
+        if (ctx.ELSE() == null) {
             visitChildren(ctx);
-        } else{
-            
+        } else {
+
             // bloque if
-            visitBlock((BlockContext)ctx.getChild(4));
-            
+            visitBlock((BlockContext) ctx.getChild(4));
+
             int aux = countLbl;
             countLbl++;
-            result +=  String.format("jmp L%s\n",countLbl);
-            result +=  String.format("label L%s\n",aux);
-            
+            result += String.format("jmp L%s\n", countLbl);
+            result += String.format("label L%s\n", aux);
+
             // bloque else
-            visitBlock((BlockContext)ctx.getChild(6)); 
+            visitBlock((BlockContext) ctx.getChild(6));
         }
-        result += String.format("label L%s\n",countLbl);
-        
-        return "";        
+        result += String.format("label L%s\n", countLbl);
+
+        return "";
     }
-    
+
     @Override
-    public String visitCyclewhile(CyclewhileContext ctx){
+    public String visitCyclewhile(CyclewhileContext ctx) {
         countLbl++;
         int aux = countLbl;
 
-        result += String.format("label L%s\n",countLbl);
+        result += String.format("label L%s\n", countLbl);
         countLbl++;
-        result += String.format("ifnot %s, jmp L%s\n",ctx.operation().getText(),countLbl);
+        result += String.format("ifnot %s, jmp L%s\n", ctx.operation().getText(), countLbl);
 
-        visitChildren(ctx); 
+        visitChildren(ctx);
 
-        result += String.format("jmp L%s\n",aux);
-        result +=  String.format("label L%s\n",countLbl);
+        result += String.format("jmp L%s\n", aux);
+        result += String.format("label L%s\n", countLbl);
 
         return "";
     }
 
     @Override
-    public String visitBlock(BlockContext ctx){
-        visitChildren(ctx);    
+    public String visitBlock(BlockContext ctx) {
+        visitChildren(ctx);
         return "";
     }
 
     @Override
-    public String visitCyclefor(CycleforContext ctx){
+    public String visitCyclefor(CycleforContext ctx) {
         countLbl++;
 
         visitAssignment(ctx.assignment());
 
         int aux = countLbl;
-        result +=  String.format("label L%s\n",countLbl);
+        result += String.format("label L%s\n", countLbl);
         countLbl++;
-        result += String.format("ifnot %s, jmp L%s\n",ctx.operation().getText(),countLbl);
+        result += String.format("ifnot %s, jmp L%s\n", ctx.operation().getText(), countLbl);
         visitBlock(ctx.instruction().block());
 
-        result += String.format("%s %s\n",ctx.ID().getText(),ctx.asign().getText());
-        result += String.format("jmp L%s\n",aux);
-        result += String.format("label L%s\n",countLbl);
+        result += String.format("%s %s\n", ctx.ID().getText(), ctx.asign().getText());
+        result += String.format("jmp L%s\n", aux);
+        result += String.format("label L%s\n", countLbl);
 
         return "";
     }
-    
-    public void getResult () {
-        System.out.println(result);            
+
+    public void getResult() {
+        System.out.println(result);
+    }
+
+    public void generateCode() {
+        try {
+            FileWriter fileWriter = new FileWriter("intermediate-code.txt");
+            for(int i=0;i<result.length();i++){
+                fileWriter.write(result.charAt(i));
+            }
+            fileWriter.close();
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     private List<ParseTree> findRuleNodes(ParseTree ctx, int ruleIndex){
         return new ArrayList<ParseTree>(Trees.findAllRuleNodes(ctx, ruleIndex));
     }
     
-    private boolean moreThanTwo(List<ParseTree> ruleTerms){
-        if (ruleTerms.size() < 3){
-            for (ParseTree parseTree : ruleTerms) {
-                TermContext tc = ((TermContext)parseTree);
-                if(tc.getParent() instanceof ExpContext){
-                    result += tc.getParent().getChild(0).getText() + " " + tc.getChild(0).getText() + "\n";
-                } else{
-                    result += tc.getChild(0).getText() + (ruleTerms.size() == 1 ? "\n" : " ");
-                }
+    private void moreThanTwo(List<ParseTree> ruleTerms){
+        for (ParseTree parseTree : ruleTerms) {
+            TermContext tc = ((TermContext)parseTree);
+            if(tc.getParent() instanceof ExpContext){
+                result += tc.getParent().getChild(0).getText() + " " + tc.getChild(0).getText() + "\n";
+            } else{
+                result += tc.getChild(0).getText() + (ruleTerms.size() == 1 ? "\n" : " ");
             }
-            return false;
         }
-        return true;
     }
 
     // Esta funcion concatena los temporales anteriores y actuales pasandole la operacion entre medio
