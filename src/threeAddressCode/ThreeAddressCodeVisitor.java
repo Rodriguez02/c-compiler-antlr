@@ -12,9 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
-    private String IFN;
-    private String LBL;
-    private String JMP;
     private int countLbl;
     private int countTmp;
     private String result;
@@ -22,9 +19,6 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
     private String currentTemp;
 
     public ThreeAddressCodeVisitor() {
-        this.IFN = "ifnot";
-        this.LBL = "label";
-        this.JMP = "jmp";
         this.countLbl = 0;
         this.countTmp = 0;
         this.result = "";
@@ -40,64 +34,69 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
     @Override
     public String visitAssignment(AssignmentContext ctx){
         if (ctx.asign() != null){
-            //result += ctx.ID().getText() + " = ";
-            processFactors(ctx.asign().operation().opal());
+            List<ParseTree> ruleTerms = findRuleNodes(ctx, reglasParser.RULE_term);
+            if (moreThanTwo(ruleTerms)){
+                processFactors(ctx.asign().operation().opal());
+            }else{
+                result += ctx.ID().getText() + " = ";
+            }
         }
-
         return "";
     }
-
+    
     @Override
     public String visitDeclaration(DeclarationContext ctx){
         if (ctx.asign() != null){
-            result += ctx.ID().getText() + " = " + "\n";
-            processFactors(ctx.asign().operation().opal());
+            List<ParseTree> ruleTerms = findRuleNodes(ctx, reglasParser.RULE_term);
+            if (moreThanTwo(ruleTerms)){
+                processFactors(ctx.asign().operation().opal());
+            }else{
+                result += ctx.ID().getText() + " = ";
+            }
         }
-
         return "";
     }
-
+    
     @Override
     public String visitCondif(CondifContext ctx){
         countLbl++;
         
-        result += "ifnot " + ctx.operation().getText() + ", jmp L" + countLbl + "\n";
+        result += String.format("ifnot %s, jmp L%s\n",ctx.operation().getText(),countLbl);
+        
         if(ctx.ELSE() == null){
             visitChildren(ctx);
         } else{
-
+            
             // bloque if
             visitBlock((BlockContext)ctx.getChild(4));
-
+            
             int aux = countLbl;
             countLbl++;
-            result += "jmp L" + countLbl + "\n";
-            result += "label L" + aux + "\n";
+            result +=  String.format("jmp L%s\n",countLbl);
+            result +=  String.format("label L%s\n",aux);
             
             // bloque else
-            visitBlock((BlockContext)ctx.getChild(6));
-            
+            visitBlock((BlockContext)ctx.getChild(6)); 
         }
-        result += "label L" + countLbl + "\n";
-        result += "\n"; 
+        result += String.format("label L%s\n",countLbl);
         
         return "";        
     }
-
+    
     @Override
     public String visitCyclewhile(CyclewhileContext ctx){
         countLbl++;
-
         int aux = countLbl;
-        result += "label L" + countLbl + "\n";
-        countLbl++;
-        result += "ifnot " + ctx.operation().getText() + ", jmp L" + countLbl + "\n";
-        visitChildren(ctx); 
-        result += "jmp L" + aux + "\n";
-        result += "label L" + countLbl + "\n";
 
-        result += "\n";
-        
+        result += String.format("label L%s\n",countLbl);
+        countLbl++;
+        result += String.format("ifnot %s, jmp L%s\n",ctx.operation().getText(),countLbl);
+
+        visitChildren(ctx); 
+
+        result += String.format("jmp L%s\n",aux);
+        result +=  String.format("label L%s\n",countLbl);
+
         return "";
     }
 
@@ -107,25 +106,22 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
         return "";
     }
 
-
     @Override
     public String visitCyclefor(CycleforContext ctx){
         countLbl++;
 
         visitAssignment(ctx.assignment());
+
         int aux = countLbl;
-        result += "label L" + countLbl + "\n";
+        result +=  String.format("label L%s\n",countLbl);
         countLbl++;
-        result += "ifnot " + ctx.operation().getText() + ", jmp L" + countLbl + "\n";
+        result += String.format("ifnot %s, jmp L%s\n",ctx.operation().getText(),countLbl);
         visitBlock(ctx.instruction().block());
 
-        result += ctx.ID().getText() + " " + ctx.asign().getText() + "\n";
+        result += String.format("%s %s\n",ctx.ID().getText(),ctx.asign().getText());
+        result += String.format("jmp L%s\n",aux);
+        result += String.format("label L%s\n",countLbl);
 
-        result += "jmp L" + aux + "\n";
-        result += "label L" + countLbl + "\n";
-
-        result += "\n";
-        
         return "";
     }
     
@@ -133,57 +129,64 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
         System.out.println(result);            
     }
 
+    private List<ParseTree> findRuleNodes(ParseTree ctx, int ruleIndex){
+        return new ArrayList<ParseTree>(Trees.findAllRuleNodes(ctx, ruleIndex));
+    }
+    
+    private boolean moreThanTwo(List<ParseTree> ruleTerms){
+        if (ruleTerms.size() < 3){
+            for (ParseTree parseTree : ruleTerms) {
+                TermContext tc = ((TermContext)parseTree);
+                if(tc.getParent() instanceof ExpContext){
+                    result += tc.getParent().getChild(0).getText() + " " + tc.getChild(0).getText() + "\n";
+                } else{
+                    result += tc.getChild(0).getText() + (ruleTerms.size() == 1 ? "\n" : " ");
+                }
+            }
+            return false;
+        }
+        return true;
+    }
 
-    // Esta funcion concate los temporales anteriores y actuales pasandole la operacion entre medio
+    // Esta funcion concatena los temporales anteriores y actuales pasandole la operacion entre medio
     private void concatTemps(String operation){
         result += String.format("t%d = %s %s %s \n", countTmp, previousTemp, operation, currentTemp);
         currentTemp = "t" + countTmp;
         countTmp++;
     }
 
-    private Collection<ParseTree> findOpalWithoutTerms(ParseTree ctx){
-        Collection<ParseTree> terms = Trees.findAllRuleNodes(ctx, reglasParser.RULE_term);
-        //System.out.println("Term Size: "+terms.size());
-        Collection<ParseTree> opals = Trees.findAllRuleNodes(ctx, reglasParser.RULE_opal);
-
-        opals.remove(opals.toArray()[0]);
-   
-        //System.out.println("Opal size: " + opals.size() );
-        Collection<ParseTree> termsInOpal;
+    /**
+     * Elimina todos los terminos o factores que se encuentren dentro
+     * de opal para evitar que se alteren el contador de temporal
+     */
+    private List<ParseTree> removeTermsOrFactors(ParseTree ctx){
+        int ruleIndex;
+        List<ParseTree> termsOrFactors;
+        List<ParseTree> termsOrFactorsInOpal;
+        List<ParseTree> opals = findRuleNodes(ctx, reglasParser.RULE_opal);
+        if(ctx instanceof OpalContext){
+            ruleIndex = reglasParser.RULE_term;
+            termsOrFactors = findRuleNodes(ctx, ruleIndex);
+            opals.remove(0); 
+        } else{
+            ruleIndex = reglasParser.RULE_factor;
+            termsOrFactors = findRuleNodes(ctx, ruleIndex);
+        }
         for (ParseTree o : opals) {
             if(((OpalContext)o).getParent() instanceof FactorContext){
-                termsInOpal = Trees.findAllRuleNodes(o, reglasParser.RULE_term);
-                terms.removeAll(termsInOpal);
+                termsOrFactorsInOpal = findRuleNodes(o, ruleIndex);
+                termsOrFactors.removeAll(termsOrFactorsInOpal);
             }
         }
-        return terms;
+        return termsOrFactors;
     }
 
-    private Collection<ParseTree> findOpalWithoutFactors(ParseTree ctx){
-        Collection<ParseTree> factors = Trees.findAllRuleNodes(ctx, reglasParser.RULE_factor);
-        //System.out.println("Term Size: "+terms.size());
-        Collection<ParseTree> opals = Trees.findAllRuleNodes(ctx, reglasParser.RULE_opal);
-
-        //opals.remove(opals.toArray()[0]);
-   
-        //System.out.println("Opal size: " + opals.size() );
-        Collection<ParseTree> factorsInOpal;
-        for (ParseTree o : opals) {
-            if(((OpalContext)o).getParent() instanceof FactorContext){
-                factorsInOpal = Trees.findAllRuleNodes(o, reglasParser.RULE_factor);
-                factors.removeAll(factorsInOpal);
-            }
-        }
-        return factors;
-    }
 
     private void generateTemps(Collection<ParseTree> factors){
         List<ParseTree> factorsLocal = new ArrayList<ParseTree>(factors);
         String temp;
 
         for(int i=0; i < factorsLocal.size(); i++){
-
-            // si es opal guardar el ultimo termporal
             if(((FactorContext)factorsLocal.get(i)).opal() != null){
                 temp = currentTemp;
                 processFactors(((FactorContext)factorsLocal.get(i)).opal());
@@ -201,30 +204,24 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
     }
 
     private void processFactors(OpalContext ctx) {
-        Collection<ParseTree> ruleTerms = findOpalWithoutTerms(ctx);
+        List<ParseTree> ruleTerms = removeTermsOrFactors(ctx);
         String temp;
 
         List<ParseTree> terms = new ArrayList<ParseTree>(ruleTerms);
         for (int i=0; i < terms.size(); i++){
-            // Lista de factores de ese termino 'i' 9 * 8 / 2  -> [9,8,2]
-            Collection<ParseTree> factors = findOpalWithoutFactors((TermContext)terms.get(i));
+            List<ParseTree> factors = removeTermsOrFactors((TermContext)terms.get(i));
             List<ParseTree> listFactors = new ArrayList<ParseTree>(factors);
 
-            // Si tiene mas de un factor -> 9 * 8 / 2 
             if (factors.size() > 1){
                 temp = currentTemp;
-                generateTemps(factors); // Genero los temporales
-                                        // t0 = 9 * 8
-                                        // t1 = t0 / 2    
-
-                previousTemp = temp; // almaceno en un auxiliar el temporal actual
-
+                generateTemps(factors);
+                previousTemp = temp;
                 currentTemp = "t" + (countTmp - 1); 
             }else{    
-                previousTemp = currentTemp; // almaceno en un auxiliar el temporal actual
+                previousTemp = currentTemp; 
                 if(((TermContext)terms.get(i)).factor().opal() == null){
-                    currentTemp = listFactors.get(0).getText(); // el actual es el primero de la lista 9 -> 9 + 1
-                    if(terms.size() == 1){ // cuando hay un termino y un factor, ej --> y = 9;
+                    currentTemp = listFactors.get(0).getText();
+                    if(terms.size() == 1){ 
                         result += currentTemp + "\n";
                     }
                 } else {
@@ -233,7 +230,7 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
                     previousTemp = temp;
                 }
             }
-            if(i > 0){ // si no es el primer termino
+            if(i > 0){ 
                 concatTemps(terms.get(i).getParent().getChild(0).getText());
             }
         }
