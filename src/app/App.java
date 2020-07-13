@@ -44,6 +44,7 @@ public class App {
         ThreeAddressCodeVisitor visitor = new ThreeAddressCodeVisitor();
         visitor.visit(tree);
         visitor.getResult();
+        visitor.generateCode();
 
         // MyVisitor visitor = new MyVisitor();
         // visitor.visit(tree);
