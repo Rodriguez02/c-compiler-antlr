@@ -90,3 +90,45 @@ int main(){
     int y;
     y = 3 / 2 + 3 / (4 + 3) * 3 * x - 9 * j;
 }
+
+int main(){    
+
+    int y;
+    y = 6 * 5 && p > (4 + (2 > 5) || 3 < 10) * 3  || x * 7 > 0;
+}
+
+int main(){    
+
+    int y;
+    y = (4 * 11 / (-2 * 5 - (4 + 10 ))) > 10 && n < j * 12;
+}
+
+int main(){    
+    
+    int y;
+    if(y > 11 && p < 12 - 4){
+        a = a + 1 / 5 * 2;
+    }else{
+        a = 0;
+        p = 15;
+    }
+}
+
+
+https://nptel.ac.in/content/storage2/courses/106108113/module5/Lecture17.pdf / pag 14
+https://web.stanford.edu/class/archive/cs/cs143/cs143.1128/lectures/13/Slides13.pdf / pag 50
+http://webpages.iust.ac.ir/morteza_zakeri/repo/iust_course_materials/AdvancedCompiler/HWs/ClassNotes/intermediate_code/240%20TAC%20Examples.pdf / pag 5
+
+int suma(int a, int b){                     func begin suma 
+    int sum;                                t0 = a + b;
+    sum = a + b;                            sum = t0;
+    return sum;                             return sum;
+}                                           func end
+
+int main(){                                 func begin main
+    int a;                                  t1 = 4 * 3
+                                            param t1
+    a = sum((4*3), (5/8));                  t2 = 5 / 8
+                                            param t2
+                                            t3 = call suma, 2
+}                                           func end
