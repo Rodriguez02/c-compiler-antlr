@@ -170,33 +170,6 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
         countTmp++;
     }
 
-    /**
-     * Elimina todos los terminos o factores que se encuentren dentro
-     * de opal para evitar que se alteren el contador de temporal
-     */
-    private List<ParseTree> removeTermsOrFactors(ParseTree ctx){
-        int ruleIndex;
-        List<ParseTree> termsOrFactors;
-        List<ParseTree> termsOrFactorsInOpal;
-        List<ParseTree> opals = findRuleNodes(ctx, reglasParser.RULE_opal);
-        if(ctx instanceof OpalContext){
-            ruleIndex = reglasParser.RULE_term;
-            termsOrFactors = findRuleNodes(ctx, ruleIndex);
-            opals.remove(0); 
-        } else{
-            ruleIndex = reglasParser.RULE_factor;
-            termsOrFactors = findRuleNodes(ctx, ruleIndex);
-        }
-        for (ParseTree o : opals) {
-            if(((OpalContext)o).getParent() instanceof FactorContext){
-                termsOrFactorsInOpal = findRuleNodes(o, ruleIndex);
-                termsOrFactors.removeAll(termsOrFactorsInOpal);
-            }
-        }
-        return termsOrFactors;
-    }
-
-
     private void generateTemps(Collection<ParseTree> factors){
         List<ParseTree> factorsLocal = new ArrayList<ParseTree>(factors);
         String temp;
@@ -265,13 +238,6 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
     - while
     - for
     - funciones
-
-        - cuando el opal es el unico termino x = ( 9 + 1 )
-                                             x = 4 + ( 9 * 2) + 5
-          no esta contemplado el proceso de un unico termino
-
-    - el igual no hace falta imprimirlo viene con la regla
-    - guardar en un archivo
 
     int main(){     
         int x;                              
