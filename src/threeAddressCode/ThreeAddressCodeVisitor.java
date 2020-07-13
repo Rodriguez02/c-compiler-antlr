@@ -147,10 +147,6 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
             System.out.println(e.getMessage());
         }
     }
-
-    private List<ParseTree> findRuleNodes(ParseTree ctx, int ruleIndex){
-        return new ArrayList<ParseTree>(Trees.findAllRuleNodes(ctx, ruleIndex));
-    }
     
     private void moreThanTwo(List<ParseTree> ruleTerms){
         for (ParseTree parseTree : ruleTerms) {
@@ -169,33 +165,6 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
         currentTemp = "t" + countTmp;
         countTmp++;
     }
-
-    /**
-     * Elimina todos los terminos o factores que se encuentren dentro
-     * de opal para evitar que se alteren el contador de temporal
-     */
-    private List<ParseTree> removeTermsOrFactors(ParseTree ctx){
-        int ruleIndex;
-        List<ParseTree> termsOrFactors;
-        List<ParseTree> termsOrFactorsInOpal;
-        List<ParseTree> opals = findRuleNodes(ctx, reglasParser.RULE_opal);
-        if(ctx instanceof OpalContext){
-            ruleIndex = reglasParser.RULE_term;
-            termsOrFactors = findRuleNodes(ctx, ruleIndex);
-            opals.remove(0); 
-        } else{
-            ruleIndex = reglasParser.RULE_factor;
-            termsOrFactors = findRuleNodes(ctx, ruleIndex);
-        }
-        for (ParseTree o : opals) {
-            if(((OpalContext)o).getParent() instanceof FactorContext){
-                termsOrFactorsInOpal = findRuleNodes(o, ruleIndex);
-                termsOrFactors.removeAll(termsOrFactorsInOpal);
-            }
-        }
-        return termsOrFactors;
-    }
-
 
     private void generateTemps(Collection<ParseTree> factors){
         List<ParseTree> factorsLocal = new ArrayList<ParseTree>(factors);
