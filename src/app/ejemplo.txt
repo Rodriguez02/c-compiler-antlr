@@ -1,15 +1,11 @@
+int suma(int a, int b){
+    return a + b;
+}
+
 int main(){    
     int y;
-    y = 5 + 4 + 3;
-
-    if(y==3)
-    {
-        j = 10;
-        j = y + 3 - y;
-        int variable = (4 + 5 * 2) - 2 * y;
-    }
-
-    for(i=0;i<5;i=i+1){
-        f = 0;
-    }
+    y = (suma(5*6,(7/-2/0)) * 0) / 0;
 }
+
+
+
