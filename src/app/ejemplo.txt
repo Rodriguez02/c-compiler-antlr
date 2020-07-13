@@ -5,4 +5,8 @@ int main(){
     if(x > 3 && x < 10){
         a = a + 1;
     }
+
+    while(d>9){
+        int = 0 + 11;
+    }
 }

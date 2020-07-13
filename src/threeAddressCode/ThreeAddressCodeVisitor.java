@@ -132,6 +132,19 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
         return "";
     }
 
+    @Override
+    public String visitFunction(FunctionContext ctx){ 
+        result += String.format("func begin %s\n",ctx.ID().getText());
+        visitBlock(ctx.block());
+        result += String.format("%s end\n",ctx.ID().getText());
+        return "";
+    }
+
+    @Override
+    public String visitRetorno(RetornoContext ctx){
+        result += String.format("return %s\n",ctx);
+    }
+
     private List<ParseTree> findRuleNodes(ParseTree ctx, int ruleIndex){
         return new ArrayList<ParseTree>(Trees.findAllRuleNodes(ctx, ruleIndex));
     }
