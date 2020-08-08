@@ -6,6 +6,11 @@ import org.antlr.v4.runtime.Recognizer;
 
 import errors.CustomErrors;
 
+/**
+ * Personalizamos los errores de ANTLR para poder hacer un 
+ * "pretty printer" de los mismo e indicar que son Sintacticos y en 
+ * que posicion se encuentra
+ */
 public class ErrorsListener extends BaseErrorListener {
 
     private CustomErrors customErrors;
