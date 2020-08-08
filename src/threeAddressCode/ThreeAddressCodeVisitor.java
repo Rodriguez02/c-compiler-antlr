@@ -10,16 +10,27 @@ import app.reglasBaseVisitor;
 import app.reglasParser;
 import app.reglasParser.*;
 
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Esta clase es un visitor que luego de que el arbol queda parseado recorrera
+ * el mismo para poder escribir un codigo de 3 direcciones
+ */
 public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
+    // Contador de labels
     private int countLbl;
+    // Contador de temporales
     private int countTmp;
+    // Concatena el resultado final
     private String result;
+    // Almacena el temporal anterior
     private String previousTemp;
+    // Almacena el temporal actual
     private String currentTemp;
 
     public ThreeAddressCodeVisitor() {
@@ -40,14 +51,14 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
         if (ctx.asign() != null) {
             List<ParseTree> ruleFactors = findRuleNodes(ctx, reglasParser.RULE_factor);
             List<ParseTree> funcs = findRuleNodes(ctx, reglasParser.RULE_callfunction);
-            if (ruleFactors.size()<3 && funcs.size() == 0) {
+            if (ruleFactors.size() < 3 && funcs.size() == 0) {
                 result += ctx.ID().getText() + " = ";
-                moreThanTwo(ruleFactors);
-            } else{
+                lessThanTWo(ruleFactors);
+            } else {
                 processConjunctions(ctx.asign().operation().opal());
                 result += ctx.ID().getText() + " = t" + (countTmp - 1) + "\n";
             }
-        
+
         }
         return "";
     }
@@ -56,10 +67,10 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
     public String visitDeclaration(DeclarationContext ctx) {
         if (ctx.asign() != null) {
             List<ParseTree> ruleFactors = findRuleNodes(ctx, reglasParser.RULE_factor);
-            if (ruleFactors.size()<3) {
+            if (ruleFactors.size() < 3) {
                 result += ctx.ID().getText() + " = ";
-                moreThanTwo(ruleFactors);
-            } else{
+                lessThanTWo(ruleFactors);
+            } else {
                 processConjunctions(ctx.asign().operation().opal());
                 result += ctx.ID().getText() + " = t" + (countTmp - 1) + "\n";
             }
@@ -75,7 +86,6 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
         if (ctx.ELSE() == null) {
             visitChildren(ctx);
         } else {
-
             // bloque if
             visitBlock((BlockContext) ctx.getChild(4));
 
@@ -96,10 +106,11 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
     public String visitCyclewhile(CyclewhileContext ctx) {
         countLbl++;
         int aux = countLbl;
+        processConjunctions(ctx.operation().opal());
 
         result += String.format("label L%s\n", countLbl);
         countLbl++;
-        result += String.format("ifnot %s, jmp L%s\n", ctx.operation().getText(), countLbl);
+        result += String.format("ifnot %s, jmp L%s\n", currentTemp, countLbl);
 
         visitChildren(ctx);
 
@@ -122,9 +133,11 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
         visitAssignment(ctx.assignment());
 
         int aux = countLbl;
+
+        processConjunctions(ctx.operation().opal());
         result += String.format("label L%s\n", countLbl);
         countLbl++;
-        result += String.format("ifnot %s, jmp L%s\n", ctx.operation().getText(), countLbl);
+        result += String.format("ifnot %s, jmp L%s\n", currentTemp, countLbl);
         visitBlock(ctx.instruction().block());
 
         result += String.format("%s %s\n", ctx.ID().getText(), ctx.asign().getText());
@@ -135,52 +148,63 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
     }
 
     @Override
-    public String visitFunction(FunctionContext ctx){ 
-        result += String.format("func begin %s\n",ctx.ID().getText());
+    public String visitFunction(FunctionContext ctx) {
+        result += String.format("func begin %s\n", ctx.ID().getText());
         visitBlock(ctx.block());
-        result += String.format("%s end\n",ctx.ID().getText());
+        result += String.format("%s end\n", ctx.ID().getText());
         return "";
     }
 
     @Override
-    public String visitRetorno(RetornoContext ctx){
+    public String visitRetorno(RetornoContext ctx) {
         processConjunctions(ctx.opal());
         result += String.format("return %s\n", currentTemp);
         return "";
     }
 
     @Override
-    public String visitCallfunction(CallfunctionContext ctx){
-        if(ctx.arguments().operation().opal().getChildCount() > 0){
+    public String visitCallfunction(CallfunctionContext ctx) {
+        if (ctx.arguments().operation().opal().getChildCount() > 0) {
             List<ParseTree> args = findRuleNodes(ctx, reglasParser.RULE_operation);
             for (ParseTree a : args) {
-                processConjunctions(((OperationContext)a).opal());
-                result += String.format("param %s\n",currentTemp);
+                processConjunctions(((OperationContext) a).opal());
+                result += String.format("param %s\n", currentTemp);
             }
-            result += String.format("t%d = call %s, %d\n",countTmp,ctx.ID().getText(),args.size());
-        } else{
-            result += String.format("t%d = call %s\n",countTmp,ctx.ID().getText());
+            result += String.format("t%d = call %s, %d\n", countTmp, ctx.ID().getText(), args.size());
+        } else {
+            result += String.format("t%d = call %s\n", countTmp, ctx.ID().getText());
         }
         countTmp++;
         return "";
     }
 
-    private List<ParseTree> findRuleNodes(ParseTree ctx, int ruleIndex){
+    /**
+     * Obtengo un subarbol en formato ArrayList segun la regla que especifiquemos
+     */
+    private List<ParseTree> findRuleNodes(ParseTree ctx, int ruleIndex) {
         return new ArrayList<ParseTree>(Trees.findAllRuleNodes(ctx, ruleIndex));
     }
 
+    /**
+     * Muestro el codigo de tres direcciones por pantalla
+     */
     public void getResult() {
         System.out.println(result);
     }
 
-    // Esta funcion concate los temporales anteriores y actuales pasandole la
-    // operacion entre medio
+    /**
+     * Concatena los temporales anteriores y actuales pasandole la operacion que hay
+     * en el medio
+     */
     private void concatTemps(String operation) {
         result += String.format("t%d = %s %s %s \n", countTmp, previousTemp, operation, currentTemp);
         currentTemp = "t" + countTmp;
         countTmp++;
     }
 
+    /**
+     * Obtengo todas las reglas sin tener en cuanta las que son opal
+     */
     public void findRuleNodesWithoutOpal(ParseTree t, int index, List<ParseTree> nodes) {
         if (t instanceof ParserRuleContext) {
             ParserRuleContext ctx = (ParserRuleContext) t;
@@ -188,7 +212,6 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
                 nodes.add(t);
             }
         }
-        // check children
         for (int i = 0; i < t.getChildCount(); i++) {
             if (!(t.getChild(i) instanceof OpalContext)) {
                 findRuleNodesWithoutOpal(t.getChild(i), index, nodes);
@@ -196,19 +219,27 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
         }
     }
 
+    /**
+     * Usa el String con el resultado concatenado para almacenarlo en un archivo
+     */
     public void generateCode() {
         try {
-            FileWriter fileWriter = new FileWriter("intermediate-code.txt");
-            for(int i=0;i<result.length();i++){
-                fileWriter.write(result.charAt(i));
-            }
-            fileWriter.close();
-        } catch (IOException e) {
+            PrintWriter out;
+            out = new PrintWriter("intermediate-code.txt");
+            out.println(this.result);
+            out.close();
+        } catch (FileNotFoundException e) {
             System.out.println(e.getMessage());
         }
     }
     
-    private void moreThanTwo(List<ParseTree> ruleFactors){
+    /**
+     * Si los terminos son menos que dos y los mismos son sumple entonces
+     * solo se imprime ya que el codigo de tres direcciones admite 
+     * una asignacion o declaracion de esta forma: y = 7 + x, entonces no tenemos
+     * la necesidad de analizar todos los terminos
+     */
+    private void lessThanTWo(List<ParseTree> ruleFactors){
         for (ParseTree parseTree : ruleFactors) {
             FactorContext fc = ((FactorContext)parseTree);
             if(fc.getParent().getParent() instanceof ExpContext){
@@ -221,6 +252,11 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
         }
     }
 
+    /**
+     * Esta funcion es llamada recursivamente para procesar las conjunciones
+     * y de esta forma ir agregando los temporales al codigo intermedio de acuerdo
+     * a la operacion que involucra 
+     */
     private void processConjunctions(OpalContext ctx) {
         List<ParseTree> conjunctions = new ArrayList<ParseTree>();
         findRuleNodesWithoutOpal(ctx, reglasParser.RULE_conjunction, conjunctions);
@@ -229,14 +265,17 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
             temp = currentTemp;
             processComparisons((ConjunctionContext) conjunctions.get(i));
             previousTemp = temp;
-            // currentTemp = temp;
             if (i > 0) {
                 concatTemps(conjunctions.get(i).getParent().getChild(0).getText());
             }
         }
-
     }
 
+    /**
+     * Esta funcion es llamada recursivamente para procesar las comparaciones
+     * y de esta forma ir agregando los temporales al codigo intermedio de acuerdo
+     * a la operacion que involucra 
+     */
     private void processComparisons(ConjunctionContext ctx) {
         List<ParseTree> comparisons = new ArrayList<ParseTree>();
         findRuleNodesWithoutOpal(ctx, reglasParser.RULE_comparison, comparisons);
@@ -245,13 +284,17 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
             temp = currentTemp;
             processExpressions((ComparisonContext) comparisons.get(i));
             previousTemp = temp;
-            // currentTemp = temp;
             if (i > 0) {
                 concatTemps(comparisons.get(i).getParent().getChild(0).getText());
             }
         }
     }
 
+    /**
+     * Esta funcion es llamada recursivamente para procesar las expresiones
+     * y de esta forma ir agregando los temporales al codigo intermedio de acuerdo
+     * a la operacion que involucra 
+     */
     private void processExpressions(ComparisonContext ctx) {
         List<ParseTree> exps = new ArrayList<ParseTree>();
         findRuleNodesWithoutOpal(ctx, reglasParser.RULE_expression, exps);
@@ -260,13 +303,17 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
             temp = currentTemp;
             processTerms((ExpressionContext) exps.get(i));
             previousTemp = temp;
-            // currentTemp = temp;
             if (i > 0) {
                 concatTemps(exps.get(i).getParent().getChild(0).getText());
             }
         }
     }
 
+    /**
+     * Esta funcion genera los temporales en cada termino, verifica que foma
+     * tiene el termino (si son id, conjuciones o una funcion) y apartir de alli
+     * mueve los temporales previos y actuales
+     */
     private void generateTempsInTerm(Collection<ParseTree> factors) {
         List<ParseTree> factorsLocal = new ArrayList<ParseTree>(factors);
         String temp;
@@ -275,14 +322,12 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
                 temp = currentTemp;
                 processConjunctions(((FactorContext) factorsLocal.get(i)).opal());
                 previousTemp = temp;
-                // currentTemp = "t" + (countTmp - 1);
             } else if(((FactorContext)factorsLocal.get(i)).callfunction() != null){
                 temp = currentTemp;
                 visitCallfunction(((FactorContext)factorsLocal.get(i)).callfunction());
                 previousTemp = temp;
                 currentTemp = "t" + (countTmp - 1);
             } else {
-                // sino guardar el valor
                 previousTemp = currentTemp;
                 currentTemp = factorsLocal.get(i).getText();
             }
@@ -292,6 +337,10 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
         }
     }
 
+    /**
+     * Procesa cada uno de los terminos verificando el tamaño de cada uno y concatenando
+     * los temporales y llamando a la funcion que genera los mismo generateTempsInTerm()
+     */
     private void processTerms(ExpressionContext ctx) {
         List<ParseTree> ruleTerms = new ArrayList<ParseTree>();
         findRuleNodesWithoutOpal(ctx, reglasParser.RULE_term, ruleTerms);
@@ -299,22 +348,16 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
 
         List<ParseTree> terms = new ArrayList<ParseTree>(ruleTerms);
         for (int i = 0; i < terms.size(); i++) {
-            // Lista de factores de ese termino 'i' 9 * 8 / 2 -> [9,8,2]
             List<ParseTree> factors = new ArrayList<ParseTree>();
             findRuleNodesWithoutOpal(terms.get(i), reglasParser.RULE_factor, factors);
 
-            // Si tiene mas de un factor -> 9 * 8 / 2
             if (factors.size() > 1) {
                 temp = currentTemp;
-                generateTempsInTerm(factors); // Genero los temporales
-                // t0 = 9 * 8
-                // t1 = t0 / 2
-
-                previousTemp = temp; // almaceno en un auxiliar el temporal actual
-
+                generateTempsInTerm(factors);
+                previousTemp = temp;
                 currentTemp = "t" + (countTmp - 1);
             } else {
-                previousTemp = currentTemp; // almaceno en un auxiliar el temporal actual
+                previousTemp = currentTemp; 
                 if (((TermContext) terms.get(i)).factor().opal() != null) {
                     temp = currentTemp;
                     processConjunctions(((TermContext) terms.get(i)).factor().opal());
@@ -326,7 +369,7 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
                     currentTemp = "t" + (countTmp - 1);
                 }
                 else {
-                    currentTemp = factors.get(0).getText(); // el actual es el primero de la lista 9 -> 9 + 1
+                    currentTemp = factors.get(0).getText();
                 }
             }
             if(i > 0){ 
@@ -335,86 +378,3 @@ public class ThreeAddressCodeVisitor extends reglasBaseVisitor<String> {
         }
     }
 }
-
-/*
- * - cuando los terminos son mayores o iguales que 3 - agregar temporales (ok) -
- * propiedad distributiva no se hace bien - (9 * 8) * 4 --> No imprime el 4 - 4
- * * (9 * 8) --> No imprime bien el termino (Sugerencia Joseniana es el
- * generarTemps())
- * 
- * - asignacion - if - while - for - funciones
- * 
- * - cuando el opal es el unico termino x = ( 9 + 1 ) x = 4 + ( 9 * 2) + 5 no
- * esta contemplado el proceso de un unico termino
- * 
- * - el igual no hace falta imprimirlo viene con la regla - guardar en un
- * archivo
- * 
- * int main(){ int x; int y = 0; --> y = 0 int z = 1; --> z = 1
- * 
- * x = y + z; --> x = y + z
- * 
- * if (x < 0){ --> ifnot x < 0, jmp L1 x = x + 1; --> x = x + 1 --> jmp L2 }
- * else{ --> label L1 x = x + 2; --> x = x + 2 } --> label L2
- * 
- * --> label L3 while(x < 0){ --> ifnot x < 0, jmp L4 x = x + 1; --> x = x + 1
- * --> jmp L3 } --> label L4
- * 
- * int i;
- * 
- * for(i=0; i<10 ; i=i+1){ --> i = 0 --> label L5 --> ifnot i<10, jmp L6 x = x +
- * 1; --> x = x + 1 --> i = i + 1 } --> jmp L5 --> label L6
- * 
- * y = (10 + x) + 19 * y + z * 7 --> t2 = 10 + x --> t3 = 19 * y --> t4 = z * 7
- * --> t5 = t2 + t3 --> y = t5 + t4 }
- 
-    - cuando los terminos son mayores o iguales que 3
-        - agregar temporales (ok)
-        - propiedad distributiva no se hace bien
-            - (9 * 8) * 4  --> No imprime el 4
-            - 4 * (9 * 8)  --> No imprime bien el termino
-            (Sugerencia Joseniana es el generarTemps())
-
-    - asignacion
-    - if
-    - while
-    - for
-    - funciones
-
-    int main(){     
-        int x;                              
-        int y = 0;                          --> y = 0
-        int z = 1;                          --> z = 1
-
-        x = y + z;                          --> x = y + z
-
-        if (x < 0){                         --> ifnot x < 0, jmp L1
-            x = x + 1;                      --> x = x + 1
-                                            --> jmp L2
-        } else{                             --> label L1
-            x = x + 2;                      --> x = x + 2
-        }                                   --> label L2 
-        
-                                            --> label L3
-        while(x < 0){                       --> ifnot x < 0, jmp L4
-            x = x + 1;                      --> x = x + 1          
-                                            --> jmp L3
-        }                                   --> label L4
-
-        int i;                              
-
-        for(i=0; i<10 ; i=i+1){             --> i = 0
-                                            --> label L5
-                                            --> ifnot i<10, jmp L6
-            x = x + 1;                      --> x = x + 1                        
-                                            --> i = i + 1 
-        }                                   --> jmp L5
-                                            --> label L6
-
-        y = (10 + x) + 19 * y + z * 7       --> t2 = 10 + x
-                                            --> t3 = 19 * y
-                                            --> t4 = z * 7
-                                            --> t5 = t2 + t3
-                                            --> y = t5 + t4 
-    }
-*/

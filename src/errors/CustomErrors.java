@@ -3,10 +3,6 @@ package errors;
 import java.util.ArrayList;
 
 /*
-
-
-
-
     Esta clase nos permite visualizar todos los errores y advertencias necesarias
     si alguna regla sintactica no se cumple o mas bien hay un error semantico
 */
@@ -51,16 +47,8 @@ public class CustomErrors {
         System.out.println(msgWarning + msgLine + position + "; You're trying to link an '" + type1 + "' type id to a '" + type2 + "' type" + msgSemantic);
     }
 
-    public void missingPYC(String position){
-        System.out.println(msgError + msgLine + position + "; Incorrect end of instruction. Missing ';'" + msgSyntactic);
-    }
-
-    public void missingOpenSymbol(String position, String token){
-        System.out.println(msgError + msgLine + position + "; Open symbol missing: '" + token + "'" + msgSyntactic);
-    }
-
-    public void missingCloseSymbol(String position, String token){
-        System.out.println(msgError + msgLine + position + "; Close symbol missing: '" + token + "'" + msgSyntactic);
+    public void syntacticError(String position, String msg){
+        System.out.println(msgError + msgLine + position + "; " + msg + msgSyntactic);
     }
 
     public void idNotInitialized(String position, String id){
